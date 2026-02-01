@@ -3,21 +3,26 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Para Ti</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Super Mario Mini</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <link rel="stylesheet" href="css/styles.css">
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
-            background: #0f172a;
-            color: white;
             margin: 0;
             overflow: hidden;
+            background: #000;
             touch-action: none;
+            /* CRITICAL: Disables browser zooming/scrolling gestures */
+            user-select: none;
+            /* Prevents text selection */
+            -webkit-user-select: none;
+            overscroll-behavior: none;
+            font-family: 'Outfit', sans-serif;
         }
 
         #game-container {
@@ -32,8 +37,9 @@
 
         canvas {
             display: block;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100dvh;
+            /* Use dynamic viewport height for mobile browsers */
         }
 
         .glass {
@@ -42,14 +48,30 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
+
+        /* Better Mobile Button Styles */
+        .control-btn {
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+            active: scale(0.9);
+            transition: transform 0.1s;
+        }
+
+        /* Ensure controls don't get hidden behind nav bars */
+        #mobile-controls {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            bottom: 20px;
+        }
     </style>
 </head>
 
-<body>
+<body class="bg-gray-900 text-white overflow-hidden select-none">
 
     <!-- Loading Screen -->
-    <div id="loader" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+    <div id="loader" class="fixed inset-0 z-50 bg-sky-400 flex flex-col items-center justify-center">
+        <div class="text-6xl animate-bounce mb-4">🍄</div>
+        <div class="text-2xl font-bold text-white tracking-wider animate-pulse">CARGANDO...</div>
     </div>
 
     <!-- Game Layer -->
@@ -57,16 +79,22 @@
         <canvas id="gameCanvas"></canvas>
 
         <!-- HUD -->
-        <div class="absolute top-4 left-4 flex gap-4 pointer-events-none select-none z-50"> <!-- Added z-50 -->
+        <div id="game-ui-layer"
+            class="absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none select-none z-30">
+            <!-- Lives -->
             <div class="glass px-4 py-2 rounded-full flex items-center gap-2">
-                <span class="text-red-500 text-xl font-bold">♥</span>
-                <span id="lives-display" class="font-bold text-lg">5</span>
+                <span class="text-red-500 text-xl">❤️</span>
+                <span id="lives-display" class="font-bold text-lg">3</span>
             </div>
+
+            <!-- Coins -->
             <div class="glass px-4 py-2 rounded-full flex items-center gap-2">
-                <span class="text-yellow-400 text-xl font-bold">🪙</span>
+                <span class="text-yellow-400 text-xl">🪙</span>
                 <span id="coin-display" class="font-bold text-lg">0</span>
             </div>
-            <div class="glass px-4 py-2 rounded-full flex items-center gap-2">
+
+            <!-- Timer -->
+            <div class="glass px-4 py-2 rounded-full flex items-center gap-2 min-w-[100px] justify-center">
                 <span class="text-blue-400 text-xl font-bold">⏱️</span>
                 <span id="timer-display" class="font-bold text-lg">05:00</span>
             </div>
@@ -93,33 +121,24 @@
 
         <!-- Mobile Controls -->
         <div id="mobile-controls"
-            class="absolute bottom-8 left-0 right-0 flex justify-between px-8 pointer-events-none z-40">
+            class="absolute bottom-6 left-0 right-0 flex justify-between px-6 pointer-events-none z-40 w-full max-w-4xl mx-auto">
             <!-- Left Side - Movement -->
-            <div class="flex gap-3 pointer-events-auto">
-                <!-- Left Button (Default points LEFT -> No transform) -->
-                <button id="btn-left"
-                    class="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-                    style="background: transparent; border: none;">
-                    <img src="assets/artistas/boton.png" alt="Left"
-                        class="w-full h-full opacity-60 hover:opacity-80 active:opacity-100 transition-opacity">
+            <div class="flex gap-4 pointer-events-auto">
+                <!-- Left Button -->
+                <button id="btn-left" class="control-btn w-20 h-20 opacity-80 active:opacity-100 transition-opacity">
+                    <img src="assets/artistas/boton.png" class="w-full h-full object-contain" alt="Left">
                 </button>
-                <!-- Right Button (Flip to point RIGHT -> scaleX(-1)) -->
-                <button id="btn-right"
-                    class="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-                    style="background: transparent; border: none;">
-                    <img src="assets/artistas/boton.png" alt="Right"
-                        class="w-full h-full opacity-60 hover:opacity-80 active:opacity-100 transition-opacity"
-                        style="transform: scaleX(-1);">
+                <!-- Right Button (Flipped) -->
+                <button id="btn-right" class="control-btn w-20 h-20 opacity-80 active:opacity-100 transition-opacity">
+                    <img src="assets/artistas/boton.png" class="w-full h-full object-contain transform rotate-180"
+                        alt="Right">
                 </button>
             </div>
 
             <!-- Right Side - Jump -->
             <div class="pointer-events-auto">
-                <button id="btn-jump"
-                    class="w-24 h-24 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-                    style="background: transparent; border: none;">
-                    <img src="assets/artistas/noFilter.webp" alt="Jump"
-                        class="w-full h-full opacity-70 hover:opacity-90 active:opacity-100 transition-opacity">
+                <button id="btn-jump" class="control-btn w-24 h-24 opacity-90 active:opacity-100 transition-opacity">
+                    <img src="assets/artistas/noFilter.webp" class="w-full h-full object-contain" alt="Jump">
                 </button>
             </div>
         </div>

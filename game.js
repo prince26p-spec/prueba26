@@ -304,8 +304,7 @@ window.onload = async () => {
     });
 
     // Mobile Inputs
-    document.addEventListener('touchstart', handleTouch);
-    document.addEventListener('touchend', () => { keys.left = false; keys.right = false; }); // Simple reset
+    // REMOVED global touch handler to prevent conflict with dedicated buttons
 
     // 4. Setup Start Button
     document.getElementById('btn-start').addEventListener('click', () => {
@@ -313,6 +312,12 @@ window.onload = async () => {
         GameAudio.init();
         GameAudio.startBGM();
         initGame();
+    });
+
+    // Handle Orientation Change
+    window.addEventListener('orientationchange', () => {
+        setTimeout(resize, 100);
+        setTimeout(resize, 500); // Double check for laggy browsers
     });
 
     // 5. Hide Loader to show Start Screen
@@ -366,22 +371,6 @@ window.onload = async () => {
         btnJump.addEventListener('mousedown', handleJump);
     }
 };
-
-function handleTouch(e) {
-    if (gameState !== 'PLAYING') return;
-    const touch = e.touches[0];
-    if (touch.clientX > window.innerWidth / 2) {
-        keys.right = true;
-        keys.left = false;
-    } else {
-        keys.left = true;
-        keys.right = false;
-    }
-    // Simple jump on tap anywhere upper
-    if (touch.clientY < window.innerHeight / 2) {
-        player.jump();
-    }
-}
 
 function resize() {
     canvas.width = window.innerWidth;
